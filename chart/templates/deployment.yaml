@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ .Values.appName }}
+  name: {{ .Values.appName }}
+  namespace: {{ .Values.appNamespace }}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.appName }}
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.appName }}
+    spec:
+      imagePullSecrets:
+        - name: {{ .Values.imagePullSecretName }}
+      containers:
+      - image: {{ .Values.imageName }}
+        name: {{ .Values.appName }}-{{ randAlpha 10 | lower }}
+        ports:
+          - containerPort: 80
+        resources:
+          limits: #autoscaller
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 200m #autoscaller
+            memory: 256Mi #autoacaller
+          #  cpu: "4" #karptenter
+          #  memory: 4Gi #karpenter
+
