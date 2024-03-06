@@ -103,3 +103,45 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           issue-number: ${{ github.event.number }}
           body-path: plan.md
+
+  apply:
+    needs: [plan]
+    if: github.ref == 'refs/heads/main'
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    environment: Production
+    concurrency: Production
+
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.4.6
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+
+      - name: Terraform Apply
+        id: apply
+        run: terraform apply -no-color -auto-approve -input=false | tee apply.txt
+
+      - name: Display the apply summary
+        id: display
+        run: |
+          {
+            awk '/::debug::stdout:/{ next } /Apply complete!/ { print "## " $0; exit }' apply.txt
+            awk '/::debug::stdout:/{ next } /compute.amazonaws.com/ {print "- [" $1 "](http://" $3 ")"}' apply.txt | sed 's/"//g'
+          } > apply.md
+
+          cat apply.md >> $GITHUB_STEP_SUMMARY
