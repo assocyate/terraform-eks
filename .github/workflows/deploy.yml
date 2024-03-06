@@ -1,70 +1,105 @@
-name: "Terraform Infrastructure Change Management Pipeline with GitHub Actions"
+name: 00-Terraform Pipeline
 
 on:
   workflow_dispatch:
 
-env: 
-  TF_LOG: INFO
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  BUCKET_TF_STATE: ${{ secrets.BUCKET_TF_STATE}}
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
 
 jobs:
-  terraform:
-    name: "Terraform Infrastructure Change Management"
+  check:
+    name: Check Configuration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.4.6
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+
+      - name: Terraform Validate
+        id: validate
+        run: |
+          terraform validate
+          if [ $? -ne 0 ];
+          then
+            echo "## :bangbang: Validation failed.  Check the logs" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## :white_check_mark: Success! The configuration is valid." >> $GITHUB_STEP_SUMMARY
+          fi
+  plan:
+    needs: [check]
+    name: Terraform Plan
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout the repository to the runner
-        uses: actions/checkout@v2
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Setup Terraform with specified version on the runner
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
-          terraform_version: "~> 1.4"
-      
-      - name: Terraform init
+          terraform_version: 1.4.6
+
+      - name: Terraform Init
         id: init
-        run: terraform init -backend-config="bucket=$BUCKET_TF_STATE"
+        run: terraform init
 
-      - name: Terraform plan
-        id: plan
-        run: terraform plan -no-color -input=false
+      - name: Terraform Plan
         continue-on-error: true
-      
-      - uses: actions/github-script@v6
+        id: plan
+        run: |
+          terraform plan -input=false -no-color -out=tfplan
+          terraform show -no-color tfplan > plan.txt
+      - name: Display the plan summary
+        id: display
+        run: |
+          {
+            awk '/No changes. Your infrastructure matches the configuration./ {
+              print "## " $0
+              print "Terraform has compared your real infrastructure against your configuration and found no differences, so no changes are needed."
+              exit
+            }' plan.txt
+
+            awk '/Terraform will perform the following actions:/ {
+              print "## Terraform will perform the following actions:"
+              print "|Action|Resource|"
+              print "|------|--------|"
+              exit
+            }' plan.txt
+
+            awk '/Terraform used the selected/{ next } /will be/ || /must be/ {print "|" $5 "|" $2 "|"; next} /Plan:/{ print "## " $0; next }' plan.txt \
+              | sed -e 's/created/:white_check_mark: create/' -e 's/destroyed/:bangbang: destroy/' -e 's/replaced/:recycle: replace/'
+          } > plan.md
+          cat plan.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Update PR comments
         if: github.event_name == 'pull_request'
-        env:
-          PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
+        id: comment
+        uses: peter-evans/create-or-update-comment@v3
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
-            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
-            #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
-            #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
-
-            <details><summary>Show Plan</summary>
-
-            \`\`\`\n
-            ${process.env.PLAN}
-            \`\`\`
-
-            </details>
-            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: output
-            })
-
-      - name: Terraform Plan Status
-        if: steps.plan.outcome == 'failure'
-        run: exit 1
-
-      - name: Terraform Apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: terraform apply -auto-approve -input=false
-        
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.number }}
+          body-path: plan.md
