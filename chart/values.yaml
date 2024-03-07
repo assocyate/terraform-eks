@@ -1,6 +1,6 @@
 appName: explore-california-website
 appNamespace: explore-california
-imageName: 786632561667.dkr.ecr.us-west-2.amazonaws.com/explore-california:latest
+imageName: 112697660171.dkr.ecr.us-west-2.amazonaws.com/explore-california:latest
 imagePullSecretName: regcred
 serviceName: explorecalifornia-svc
 servicePort: 8080
