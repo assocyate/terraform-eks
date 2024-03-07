@@ -170,12 +170,6 @@ jobs:
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
 
-    - name: Build, tag, and push docker image to Amazon ECR
-      env:
-        REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        REPOSITORY: explore-california
-        IMAGE_TAG: latest
-
     - name: Update kube config
       run: aws eks update-kubeconfig --name demo2 --region us-west-2
 
