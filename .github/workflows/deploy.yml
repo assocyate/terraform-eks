@@ -149,6 +149,8 @@ jobs:
   integration:
     needs: [apply]
     uses: ./.github/workflows/deploy_dns.yml
+    secrets:
+      envPAT: ${{ secrets.envPAT }}
     permissions:
       contents: read
       checks: write
