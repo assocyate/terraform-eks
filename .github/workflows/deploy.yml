@@ -169,4 +169,4 @@ jobs:
 
     - name: Deploy nodejs helm chart to EKS
       run: |
-        helm install explore-california-website ./chart --namespace=explore-california
+        helm upgrade explore-california-website ./chart --namespace=explore-california
