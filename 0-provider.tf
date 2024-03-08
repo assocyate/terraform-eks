@@ -106,7 +106,7 @@ variable "dns_hostname" {
 }
 
 variable "domain" {
-  #default = "yes"
-  default = "no"
+  default = "yes"
+  #default = "no"
 }
 
