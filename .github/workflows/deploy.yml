@@ -146,37 +146,3 @@ jobs:
 
           cat apply.md >> $GITHUB_STEP_SUMMARY
   
-  integration:
-    needs: [apply]
-    uses: ./.github/workflows/deploy_dns.yml
-    secrets:
-      envPAT: ${{ secrets.envPAT }}
-    permissions:
-      contents: read
-      checks: write
-
-    
-  deploy:
-    needs: [integration]
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ vars.AWS_REGION }}
-
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v2
-
-    - name: Update kube config
-      run: aws eks update-kubeconfig --name demo2 --region us-west-2
-
-    - name: Deploy nodejs helm chart to EKS
-      run: |
-        helm upgrade explore-california-website ./chart --namespace=explore-california
