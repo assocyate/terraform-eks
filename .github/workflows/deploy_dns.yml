@@ -1,4 +1,4 @@
-name: 00-Terraform Pipeline
+name: 01-Terraform Pipeline
 
 on:
   workflow_call:
