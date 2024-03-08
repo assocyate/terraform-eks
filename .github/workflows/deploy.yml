@@ -146,8 +146,14 @@ jobs:
 
           cat apply.md >> $GITHUB_STEP_SUMMARY
 
+  integration:
+    uses: ./.github/workflows/deploy_dns.yml
+    permissions:
+      contents: read
+      checks: write
+    
   deploy:
-    needs: [apply]
+    needs: [integration]
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
