@@ -1,4 +1,4 @@
-name: 98-Destroy DNS Resources
+name: 98-Destroy Resources
 
 on:
   workflow_dispatch:
@@ -64,13 +64,15 @@ jobs:
           } > plan.md
           cat plan.md >> $GITHUB_STEP_SUMMARY
 
-  apply:
+  destroy:
     needs: [plan]
-    if: github.ref == 'refs/heads/main'
-    name: Terraform Apply
+    name: Terraform Destroy
     runs-on: ubuntu-latest
-    environment: Production
-    concurrency: Production
+    defaults:
+      run:
+        shell: bash
+        # We keep Terraform files in the terraform directory.
+        working-directory: ./domain_name
 
     steps:
       - name: Configure AWS Credentials
@@ -92,15 +94,15 @@ jobs:
         id: init
         run: terraform init
 
-      - name: Terraform Destroy
+      - name: Terraform Apply
         id: apply
         run: terraform apply -destroy -no-color -auto-approve -input=false | tee apply.txt
 
-      - name: Display the destroy summary
+      - name: Display the apply summary
         id: display
         run: |
           {
-            awk '/::debug::stdout:/{ next } /Destroy complete!/ { print "## " $0; exit }' apply.txt
+            awk '/::debug::stdout:/{ next } /Apply complete!/ { print "## " $0; exit }' apply.txt
           } > apply.md
           
           cat apply.md >> $GITHUB_STEP_SUMMARY
