@@ -1,3 +1,4 @@
+# create hostname for a domain in Route53
 # get the name of LB
 data "aws_lb" "lb" {
   arn  = var.lb_arn
@@ -15,7 +16,6 @@ data "aws_lb_hosted_zone_id" "main" {}
 
 # create hostname for a domain in Route53
 resource "aws_route53_record" "hostname" {
-  count = "${var.domain == "yes" ? 1 : 0}"
   zone_id = data.aws_route53_zone.public.zone_id
   name    = "${var.dns_hostname}.${var.public_dns_name}"
   type    = "A"
@@ -29,7 +29,6 @@ resource "aws_route53_record" "hostname" {
 
 # Create Certificate
 resource "aws_acm_certificate" "certificate" {
-  count = "${var.domain == "yes" ? 1 : 0}"
   domain_name       = "${var.dns_hostname}.${var.public_dns_name}"
   validation_method = "DNS"
 }
@@ -54,7 +53,6 @@ resource "aws_route53_record" "hostname_validation" {
 
 # Create Certificate Validation
 resource "aws_acm_certificate_validation" "certificate_validate" {
-  count = "${var.domain == "yes" ? 1 : 0}"
   certificate_arn = aws_acm_certificate.certificate.arn
   validation_record_fqdns = [for record in aws_route53_record.hostname_validation : record.fqdn]
 }
