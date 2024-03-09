@@ -1,7 +1,7 @@
 terraform {
   backend "s3" {
     key    = "github-actions-cicd/terraform-dns.tfstate" # the directory/file.tfstate
-    bucket = "tfstate-gitlab"             # the bucket
+    bucket = "tfstate-explore"             # the bucket
     region = "us-west-2"             # the region
   }
   required_providers {
