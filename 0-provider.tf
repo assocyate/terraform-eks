@@ -62,8 +62,8 @@ variable "cluster_version" {
 }
 
 variable "scale" {
-  default = "autoscale"
-  #default = "karpenter"
+  #default = "autoscale"
+  default = "karpenter"
   #default = "none"
 }
 
