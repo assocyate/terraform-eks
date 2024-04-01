@@ -3,7 +3,7 @@ terraform {
     key    = "github-actions-cicd/terraform.tfstate" # the directory/file.tfstate
     bucket = "tfstate-explore"             # the bucket
     region = "us-west-2"             # the region
-    dynamodb_table = "dynamo-state-lock"
+    #dynamodb_table = "dynamo-state-lock"
   }
   required_providers {
     aws = {
