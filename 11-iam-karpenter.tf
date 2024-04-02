@@ -41,7 +41,7 @@ resource "aws_iam_instance_profile" "karpenter" {
 }
 
 data "kubectl_path_documents" "provisioner_manifests" {
-  pattern = "./demo/provisioner.yaml"
+  pattern = "./provisioner/provisioner.yaml"
   vars = {
     cluster_name = var.cluster_name
   }
