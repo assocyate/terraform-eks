@@ -195,7 +195,7 @@ spec:
 EOF
 }
 
-resource "kubectl_manifest" "provisioner" {
+/**resource "kubectl_manifest" "provisioner" {
 count = "${var.scale == "karpenter" ? 1 : 0}"
   yaml_body = <<-EOF
 apiVersion: karpenter.sh/v1alpha5
@@ -236,4 +236,4 @@ spec:
     kubernetes.io/cluster/${var.cluster_name}: owned
 EOF
 }
-
+**/
