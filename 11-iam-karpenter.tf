@@ -39,3 +39,20 @@ resource "aws_iam_instance_profile" "karpenter" {
   name  = "KarpenterNodeInstanceProfile"
   role  = aws_iam_role.nodes.name
 }
+
+data "kubectl_path_documents" "provisioner_manifests" {
+  pattern = "./demo/provisioner.yaml"
+  vars = {
+    cluster_name = var.cluster_name
+  }
+}
+
+resource "kubectl_manifest" "provisioners" {
+  count = "${var.scale == "karpenter" ? 1 : 0}"
+  for_each  = data.kubectl_path_documents.provisioner_manifests.manifests
+  yaml_body = each.value
+
+  depends_on = [
+  helm_release.karpenter
+  ]
+}
