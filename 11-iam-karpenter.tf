@@ -48,7 +48,6 @@ data "kubectl_path_documents" "provisioner_manifests" {
 }
 
 resource "kubectl_manifest" "provisioners" {
-  count = "${var.scale == "karpenter" ? 1 : 0}"
   for_each  = data.kubectl_path_documents.provisioner_manifests.manifests
   yaml_body = each.value
 
